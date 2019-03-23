@@ -11,8 +11,7 @@ library(kableExtra)
 library(plyr)
 library(Hmisc)
 library(sqldf)
-
-
+#library(RMySQL)
 ```
 ***
 ###Data Acquisition { .tabset}
@@ -207,18 +206,6 @@ description <- indeed_dt %>%
 ```
 ***
 
-### CSV Parser { .tabset}
-
-For the purpose of speeding up the analysis process, processed dataframe is divided in four csv files that can be analyzed independently and stored in a database later on. In addition, the 10 first rows from each dataframe is displayed separately in tabs.
-
-#### CSV creation
-```{r}
-write.csv(job_position, "job_position.csv", row.names = F)
-write.csv(job_post_specific, "job_post_specific.csv", row.names = F)
-write.csv(company, "company.csv", row.names = F)
-write.csv(description, "description.csv", row.names = F)
-```
-
 #### Job Postion
 ```{r echo=FALSE}
 
@@ -263,11 +250,33 @@ description %>%
 
 ### Database Storage
 
-Post your code here Fernando 
+```{r eval = FALSE, echo = FALSE, ff}
+# #Use this connection first, if a db hasn't been created.
+# mdb <- DBI::dbConnect(
+#   RMySQL::MySQL(),
+#   host = "35.226.125.86",
+#   user = "root",
+#   password = "rootpass"#rstudioapi::askForPassword("Database password"))
+#   
+# # Create the db
+# dbSendQuery(mdb, 'CREATE SCHEMA `project3`')
+#   
+# #Connection with schema specified
+#  mdb2 <- DBI::dbConnect(
+#   RMySQL::MySQL(),
+#   dbname = 'project3',
+#   host = "35.226.125.86",
+#   user = "root",
+#   password = rstudioapi::askForPassword("Database password")
+#     
+# # Create db tables and write data frame contents
+# dbWriteTable(mdb2, 'company', company, row.names = FALSE)
+# dbWriteTable(mdb2, 'job_postion', job_position, row.names = FALSE)
+# dbWriteTable(mdb2, 'job_post_specific', job_post_specific, row.names = FALSE)
+# dbWriteTable(mdb2, 'description', description, row.names = FALSE)
+```
 
 ### Analysis
-
-
 
 ```{r, warning=FALSE}
 skills <-  job_position$skill  %>% str_extract_all("(?<=\\')([a-zA-Z]{1,}).*?(?=\\')")
@@ -279,16 +288,40 @@ positionFinal <- left_join(positionFinal,company,by="company_id")
 
 
 #positionFinal <- positionFinal %>% filter(.$company_industry != "")
-
-
 ```
 
 
+```{r Import and Wide}
+dfwide <- job_position %>% 
+  select(fcc_id, skill) %>% #Take the link as an identifier and the skills column
+  mutate(skill = stringi::stri_extract_all(skill,regex = "(?!')((?:''|[^'])*)(?=(',)|(']))"), V2 = 1) %>% #extract individual skills
+  unnest(skill, .id = "id") %>% #Skills to rows
+  spread(skill, V2, fill = 0) %>%  #Skills rows to columns
+  select (-c(`<NA>`,id)) %>% #remove unused columns
+  dplyr::rename(NLP = `Natural Language Processing`) #Makes the chart look better
+```
 
+```{r Tall}
+dftall <- dfwide %>% 
+  gather(key = "skill",value = "required", 2:465)
+```
 
+```{r Summarise}
+dftop <- dftall %>% 
+  group_by(skill) %>% 
+  dplyr::summarise(count = sum(required)) %>% 
+  arrange(count) %>% 
+  top_n(30)
+```
 
-
-
+```{r fig.width=4, fig.height=6}
+p<-ggplot(data=dftop, aes(x=reorder(skill,count), y=count), width=.5,position = position_dodge(width = 60)) +
+  ggtitle("Data Science Skills")+
+  geom_bar(stat="identity", fill="steelblue")+
+  theme_minimal() +
+  coord_flip() 
+p
+```
 
 
 
