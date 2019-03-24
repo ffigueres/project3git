@@ -130,9 +130,6 @@ job_position <- indeed_dt %>%
         dplyr::distinct() %>%
         # create a "fcc_unique_id" after the dplyr::distinct()
         dplyr::mutate(fcc_unique_id = paste(row_number(), fcc_id, sep = "_"))
-
-
-
 ```
 
 #### Job Post Specific
@@ -250,7 +247,7 @@ description %>%
 
 ### Database Storage
 
-```{r eval = FALSE, echo = FALSE, ff}
+```{r eval = FALSE, echo = FALSE, echo = FALSE}
 # #Use this connection first, if a db hasn't been created.
 # mdb <- DBI::dbConnect(
 #   RMySQL::MySQL(),
@@ -278,7 +275,7 @@ description %>%
 
 ### Analysis
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo = FALSE}
 skills <-  job_position$skill  %>% str_extract_all("(?<=\\')([a-zA-Z]{1,}).*?(?=\\')")
 
 positionFinal <- data.frame(company_id = rep(job_position$company_id,sapply(skills,length)),
@@ -291,7 +288,7 @@ positionFinal <- left_join(positionFinal,company,by="company_id")
 ```
 
 
-```{r Import and Wide}
+```{r Import and Wide, echo = FALSE}
 dfwide <- job_position %>% 
   select(fcc_unique_id, skill) %>% #Take the link as an identifier and the skills column
   mutate(skill = stringi::stri_extract_all(skill,regex = "(?!')((?:''|[^'])*)(?=(',)|(']))"), V2 = 1) %>% #extract individual skills
@@ -301,12 +298,12 @@ dfwide <- job_position %>%
   dplyr::rename(NLP = `Natural Language Processing`) #Makes the chart look better
 ```
 
-```{r Tall}
+```{r Tall, echo = FALSE}
 dftall <- dfwide %>% 
   gather(key = "skill",value = "required", 2:465)
 ```
 
-```{r Summarise}
+```{r Summarise, echo = FALSE}
 dftop <- dftall %>% 
   group_by(skill) %>% 
   dplyr::summarise(count = sum(required)) %>% 
@@ -314,7 +311,7 @@ dftop <- dftall %>%
   top_n(30)
 ```
 
-```{r fig.width=4, fig.height=6}
+```{r fig.width=4, fig.height=6, echo = FALSE}
 p<-ggplot(data=dftop, aes(x=reorder(skill,count), y=count), width=.5,position = position_dodge(width = 60)) +
   ggtitle("Data Science Skills")+
   geom_bar(stat="identity", fill="steelblue")+
@@ -328,7 +325,7 @@ p
 
 
 
-```{r Import and Wide}
+```{r Import and Wide Salary, echo = FALSE}
 dfsalary<- indeed_dt %>% 
   select(link,no_of_skills, queried_salary, skill) %>% #Take the link as an identifier and the skills column
   mutate(skill = stringi::stri_extract_all(skill,regex = "(?!')((?:''|[^'])*)(?=(',)|(']))"), V2 = 1) %>% #extract individual skills
@@ -348,7 +345,7 @@ dfsalary<- indeed_dt %>%
   mutate(skillval = as.numeric(salindex)/no_of_skills)
 ```
 
-```{r Summarise mean val}
+```{r Summarise mean val,include = FALSE}
 dftopsalm <- dfsalary %>% 
   group_by(skill) %>% 
   dplyr::summarise(valmean = mean(skillval)) %>% 
@@ -356,7 +353,7 @@ dftopsalm <- dfsalary %>%
   top_n(30)
 ```
 
-```{r fig.width=5, fig.height=6}
+```{r fig.width=5, fig.height=6, echo = FALSE}
 p<-ggplot(data=dftopsalm, aes(x=reorder(skill,valmean), y=valmean), width=.5,position = position_dodge(width = 60)) +
   ggtitle("Data Science Skills")+
   geom_bar(stat="identity", fill="steelblue")+
@@ -367,7 +364,7 @@ p
 
 
 
-```{r Summarise sum val}
+```{r Summarise sum val,include = FALSE}
 dftopsals <- dfsalary %>% 
   group_by(skill) %>% 
   dplyr::summarise(valsum = sum(skillval)) %>% 
@@ -376,7 +373,7 @@ dftopsals <- dfsalary %>%
 ```
 
 
-```{r fig.width=4, fig.height=6}
+```{r fig.width=4, fig.height=6, echo = FALSE}
 p<-ggplot(data=dftopsals, aes(x=reorder(skill,valsum), y=valsum), width=.5,position = position_dodge(width = 60)) +
   ggtitle("Data Science Skills")+
   geom_bar(stat="identity", fill="steelblue")+
@@ -388,10 +385,7 @@ p
 
 ## Location 
 
-
-
-
-```{r Import and Wide}
+```{r Import and Wide Location, echo = FALSE}
 dflocation <- indeed_dt %>% 
   select(location, skill) %>% #Take the link as an identifier and the skills column
   mutate(skill = stringi::stri_extract_all(skill,regex = "(?!')((?:''|[^'])*)(?=(',)|(']))"), V2 = 1) %>% #extract individual skills
@@ -407,13 +401,7 @@ dflocation <- indeed_dt %>%
   arrange(location)
 ```
 
-```{r}
-(p <- ggplot(dflocation, aes(skill, location)) + geom_tile(aes(fill = dflocation$c),
-+     colour = "white") + scale_fill_gradient(low = "white",
-+     high = "steelblue"))
-```
-
-```{r fig.width=6, fig.height=6}
+```{r fig.width=6, fig.height=6, echo = FALSE}
 ggplot(data = dflocation, aes(x=skill, y=location, fill=count)) + 
   geom_tile()
 ```
