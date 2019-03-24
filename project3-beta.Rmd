@@ -20,7 +20,7 @@ library(sqldf)
 
 In this stage, the original dataframe will be loaded into the environment in order to start the cleaning process.
 
-```{r}
+```{r, echo = FALSE}
 indeed_dt <- read.csv("indeed_job_dataset.csv", stringsAsFactors = F)
 # clean up header
 names(indeed_dt) <- tolower(names(indeed_dt))
@@ -30,7 +30,7 @@ names(indeed_dt) <- tolower(names(indeed_dt))
 ####  Original Dataset Display
 
 Dimensions:
-```{r}
+```{r, echo = FALSE}
 dim(indeed_dt)
 
 ```
@@ -48,7 +48,7 @@ indeed_dt %>%
 
 ### Transformations
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo = FALSE}
 
 indeed_dt <- indeed_dt %>%
               mutate(jk_id = str_extract_all(link, pattern = "jk=[[:alnum:]]+&") %>% 
@@ -58,7 +58,7 @@ indeed_dt <- indeed_dt %>%
 
 ```
 
-```{r}
+```{r, echo = FALSE}
 
 
 #indeed_dt %>% head()
@@ -68,7 +68,7 @@ sapply(list(indeed_dt$jk_id, indeed_dt$fcc_id), function(x){length(unique(x))})
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 # lookup both Ids, some links are missing the "jk_id"
 jk_id.lookup <- plyr::count(indeed_dt, "jk_id") %>% arrange(desc(freq))
 table(jk_id.lookup$freq); 
@@ -76,14 +76,14 @@ table(jk_id.lookup$freq);
 
 ```
 
-```{r}
+```{r, echo = FALSE}
 # "fcc_id" can be duplicated because the same company can post the same job position with different attributes, most likely offering the same position in different locations
 fcc_id.lookup <- count(indeed_dt, "fcc_id") %>% arrange(desc(freq))
 #head(fcc_id.lookup)
 
 ```
 
-```{r}
+```{r, echo = FALSE}
 # the result indicates that each "jk_id" is unique in the data set; there is no duplication for any "jk_id"
 # however, 99 jobs have missing "jk_id"
 # why? what are these 99 jobs? 
@@ -93,7 +93,7 @@ jk_id.missing <- indeed_dt %>%
 
 ```
 
-```{r}
+```{r, echo = FALSE}
 # let's fix these "jk_id" - these are written differently as there's no "jk=" in these links        
 # e.g. https://www.indeed.com/company/Wag!/jobs/Data-Engineer-0633d6309b9f2be8?fccid=381733c3e1596619&vjs=3
 jk_id.missing <- jk_id.missing %>%
@@ -104,7 +104,7 @@ jk_id.missing <- jk_id.missing %>%
 
 ```
 
-```{r}
+```{r, echo = FALSE}
 # let's 'union all' both sets
 indeed_dt <- indeed_dt %>%
         dplyr::filter(x %nin% jk_id.missing$x) %>%
@@ -124,7 +124,7 @@ one extreme case, Booz Allen Hamilton posted 151 different jobs with identical "
 We must 1) remove duplication of identical jobs (job_title, queried_salary, job_type, skill, company), and 2) create unique "fcc_unique_id" as the primary key. Last but not least, we also need to clean up the "company" table by creating a company Id and performing simple Change-Data-Capture
 
 #### Job Position Dataframe
-```{r}
+```{r, echo = FALSE}
 job_position <- indeed_dt %>%
         dplyr::select(fcc_id, job_title, queried_salary, job_type, skill, company) %>%
         dplyr::distinct() %>%
@@ -133,7 +133,7 @@ job_position <- indeed_dt %>%
 ```
 
 #### Job Post Specific
-```{r}
+```{r, echo = FALSE}
 job_post_specific <- sqldf("
 select df.jk_id
 , jp.fcc_unique_id
@@ -154,7 +154,7 @@ and jp.company = df.company
 ")
 ```
 
-```{r}
+```{r message = FALSE, echo = FALSE}
 #########################
 # clean-up job_position #
 #########################
@@ -171,7 +171,7 @@ job_position <- job_position %>%
 
 
 ```
-```{r}
+```{r message = FALSE, echo = FALSE}
 ###########
 # company #
 ###########
@@ -195,7 +195,7 @@ order by company
 )    
 ```
 ####  Description
-```{r}
+```{r, echo = FALSE}
 
 description <- indeed_dt %>%
         select(link, description) %>%
@@ -303,7 +303,7 @@ dftall <- dfwide %>%
   gather(key = "skill",value = "required", 2:465)
 ```
 
-```{r Summarise, echo = FALSE}
+```{r Summarise, echo = FALSE, message = FALSE}
 dftop <- dftall %>% 
   group_by(skill) %>% 
   dplyr::summarise(count = sum(required)) %>% 
@@ -323,7 +323,13 @@ p
 
 ## Salary Index
 
+As part of our analsys, we've calculated the relative value of each skill by dividing the expected salary of each position by the number of required skills. With this measure, we hoped to determine if some data scietist roles required less populat skills which command a higher salary.
 
+Epected salary intervals were converted to a 1 to 6 scale with 6 corresponding to expected salries >$160000. This number was divided by the total number of skills and that weight is assigned to the skill. We later aggregated the mean and sums of this values as show in the charts below.
+
+Our first chart plots the sum of the relative values and gives us a very similar result to the raw count scores from the above chart.
+
+The next chart calculates the avegrage of relative values in this shows a very different picture. Less commong skills which are associated with higher paying jobs rise to the top. This chart is heavily influenced my skills with a low job count so the results need to be intepreted with caution. Rather than using it infer general trends, a candiate might find it useful to see if a skill he or she has might  opne the door to a specialized role.
 
 ```{r Import and Wide Salary, echo = FALSE}
 dfsalary<- indeed_dt %>% 
@@ -345,25 +351,6 @@ dfsalary<- indeed_dt %>%
   mutate(skillval = as.numeric(salindex)/no_of_skills)
 ```
 
-```{r Summarise mean val,include = FALSE}
-dftopsalm <- dfsalary %>% 
-  group_by(skill) %>% 
-  dplyr::summarise(valmean = mean(skillval)) %>% 
-  arrange(valmean) %>% 
-  top_n(30)
-```
-
-```{r fig.width=5, fig.height=6, echo = FALSE}
-p<-ggplot(data=dftopsalm, aes(x=reorder(skill,valmean), y=valmean), width=.5,position = position_dodge(width = 60)) +
-  ggtitle("Data Science Skills")+
-  geom_bar(stat="identity", fill="steelblue")+
-  theme_minimal() +
-  coord_flip() 
-p
-```
-
-
-
 ```{r Summarise sum val,include = FALSE}
 dftopsals <- dfsalary %>% 
   group_by(skill) %>% 
@@ -375,12 +362,33 @@ dftopsals <- dfsalary %>%
 
 ```{r fig.width=4, fig.height=6, echo = FALSE}
 p<-ggplot(data=dftopsals, aes(x=reorder(skill,valsum), y=valsum), width=.5,position = position_dodge(width = 60)) +
-  ggtitle("Data Science Skills")+
+  ggtitle("Sum of Relative Skill Value")+
   geom_bar(stat="identity", fill="steelblue")+
   theme_minimal() +
   coord_flip() 
 p
 ```
+
+
+
+```{r Summarise mean val,include = FALSE}
+dftopsalm <- dfsalary %>% 
+  group_by(skill) %>% 
+  dplyr::summarise(valmean = mean(skillval)) %>% 
+  arrange(valmean) %>% 
+  top_n(30)
+```
+
+```{r fig.width=5, fig.height=6, echo = FALSE}
+p<-ggplot(data=dftopsalm, aes(x=reorder(skill,valmean), y=valmean), width=.5,position = position_dodge(width = 60)) +
+  ggtitle("Average of Relative Skill Value")+
+  geom_bar(stat="identity", fill="steelblue")+
+  theme_minimal() +
+  coord_flip() 
+p
+```
+
+
 
 
 ## Location 
