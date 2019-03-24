@@ -168,6 +168,8 @@ company_index <- indeed_dt %>%
 job_position <- job_position %>%
         dplyr::left_join(., company_index) %>%
         dplyr::select(fcc_unique_id, job_title, queried_salary, job_type, skill, company_id)
+DT::datatable(job_post_specific %>% 
+group_by(location) %>% tally())
 
 
 ```
@@ -310,6 +312,8 @@ dftop <- dftall %>%
   arrange(count) %>% 
   top_n(30)
 ```
+
+The chart below tallies the the skill count accross the entire data set. We see that Python is the language of choice followed by R and Java. For database related technologies, SQL is the clear choice due to it's ubiquity followed by "big data" variants such as Hadoop and Spark.
 
 ```{r fig.width=4, fig.height=6, echo = FALSE}
 p<-ggplot(data=dftop, aes(x=reorder(skill,count), y=count), width=.5,position = position_dodge(width = 60)) +
