@@ -293,7 +293,7 @@ positionFinal <- left_join(positionFinal,company,by="company_id")
 
 ```{r Import and Wide}
 dfwide <- job_position %>% 
-  select(fcc_id, skill) %>% #Take the link as an identifier and the skills column
+  select(fcc_unique_id, skill) %>% #Take the link as an identifier and the skills column
   mutate(skill = stringi::stri_extract_all(skill,regex = "(?!')((?:''|[^'])*)(?=(',)|(']))"), V2 = 1) %>% #extract individual skills
   unnest(skill, .id = "id") %>% #Skills to rows
   spread(skill, V2, fill = 0) %>%  #Skills rows to columns
