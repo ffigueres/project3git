@@ -324,4 +324,97 @@ p
 ```
 
 
+## Salary Index
+
+
+
+```{r Import and Wide}
+dfsalary<- indeed_dt %>% 
+  select(link,no_of_skills, queried_salary, skill) %>% #Take the link as an identifier and the skills column
+  mutate(skill = stringi::stri_extract_all(skill,regex = "(?!')((?:''|[^'])*)(?=(',)|(']))"), V2 = 1) %>% #extract individual skills
+  unnest(skill, .id = "id") %>% #Skills to rows
+  spread(skill, V2, fill = 0) %>%  #Skills rows to columns
+  select (-c(`<NA>`,id)) %>% #remove unused columns
+  dplyr::rename(NLP = `Natural Language Processing`) %>%  #Makes the chart look better
+  gather(key = "skill",value = "required", 4:467) %>% 
+  filter(required == 1) %>% 
+  mutate(salindex = queried_salary) %>% 
+  mutate(salindex = str_replace(salindex, "<80000", "1")) %>%
+  mutate(salindex = str_replace(salindex, "80000-99999", "2")) %>% 
+  mutate(salindex = str_replace(salindex, "100000-119999", "3")) %>% 
+  mutate(salindex = str_replace(salindex, "120000-139999", "4")) %>% 
+  mutate(salindex = str_replace(salindex, "140000-159999", "5")) %>% 
+  mutate(salindex = str_replace(salindex, ">160000", "6")) %>% 
+  mutate(skillval = as.numeric(salindex)/no_of_skills)
+```
+
+```{r Summarise mean val}
+dftopsalm <- dfsalary %>% 
+  group_by(skill) %>% 
+  dplyr::summarise(valmean = mean(skillval)) %>% 
+  arrange(valmean) %>% 
+  top_n(30)
+```
+
+```{r fig.width=5, fig.height=6}
+p<-ggplot(data=dftopsalm, aes(x=reorder(skill,valmean), y=valmean), width=.5,position = position_dodge(width = 60)) +
+  ggtitle("Data Science Skills")+
+  geom_bar(stat="identity", fill="steelblue")+
+  theme_minimal() +
+  coord_flip() 
+p
+```
+
+
+
+```{r Summarise sum val}
+dftopsals <- dfsalary %>% 
+  group_by(skill) %>% 
+  dplyr::summarise(valsum = sum(skillval)) %>% 
+  arrange(valsum) %>% 
+  top_n(30)
+```
+
+
+```{r fig.width=4, fig.height=6}
+p<-ggplot(data=dftopsals, aes(x=reorder(skill,valsum), y=valsum), width=.5,position = position_dodge(width = 60)) +
+  ggtitle("Data Science Skills")+
+  geom_bar(stat="identity", fill="steelblue")+
+  theme_minimal() +
+  coord_flip() 
+p
+```
+
+
+## Location 
+
+
+
+
+```{r Import and Wide}
+dflocation <- indeed_dt %>% 
+  select(location, skill) %>% #Take the link as an identifier and the skills column
+  mutate(skill = stringi::stri_extract_all(skill,regex = "(?!')((?:''|[^'])*)(?=(',)|(']))"), V2 = 1) %>% #extract individual skills
+  unnest(skill, .id = "id") %>% #Skills to rows
+  spread(skill, V2, fill = 0) %>%  #Skills rows to columns
+  select (-c(`<NA>`,id)) %>% #remove unused columns
+  dplyr::rename(NLP = `Natural Language Processing`) %>%  #Makes the chart look better
+  gather(key = "skill",value = "required", 2:465) %>% 
+  filter(required == 1) %>% 
+  filter(location != "") %>% 
+  group_by(location, skill) %>% 
+  dplyr::summarise(count = sum(required)) %>% 
+  arrange(location)
+```
+
+```{r}
+(p <- ggplot(dflocation, aes(skill, location)) + geom_tile(aes(fill = dflocation$c),
++     colour = "white") + scale_fill_gradient(low = "white",
++     high = "steelblue"))
+```
+
+```{r fig.width=6, fig.height=6}
+ggplot(data = dflocation, aes(x=skill, y=location, fill=count)) + 
+  geom_tile()
+```
 
