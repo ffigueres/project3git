@@ -1,0 +1,23 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r Import and Wide}
+dflocation <- indeed_dt %>% 
+  select(location, skill) %>% #Take the link as an identifier and the skills column
+  mutate(skill = stringi::stri_extract_all(skill,regex = "(?!')((?:''|[^'])*)(?=(',)|(']))"), V2 = 1) %>% #extract individual skills
+  unnest(skill, .id = "id") %>% #Skills to rows
+  spread(skill, V2, fill = 0) %>%  #Skills rows to columns
+  select (-c(`<NA>`,id)) %>% #remove unused columns
+  dplyr::rename(NLP = `Natural Language Processing`) %>%  #Makes the chart look better
+  gather(key = "skill",value = "required", 2:465) %>% 
+  filter(required == 1) %>% 
+  filter(location != "")
+```
