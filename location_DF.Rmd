@@ -19,5 +19,8 @@ dflocation <- indeed_dt %>%
   dplyr::rename(NLP = `Natural Language Processing`) %>%  #Makes the chart look better
   gather(key = "skill",value = "required", 2:465) %>% 
   filter(required == 1) %>% 
-  filter(location != "")
+  filter(location != "") %>% 
+  group_by(location, skill) %>% 
+  dplyr::summarise(count = sum(required)) %>% 
+  arrange(location)
 ```
