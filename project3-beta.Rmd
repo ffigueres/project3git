@@ -114,7 +114,7 @@ indeed_dt <- indeed_dt %>%
 ***
 ### Data Normalization
 
-we are going to create a simple star schema for this data set we need four tables, i.e. "job_post_specific", "job_position", "company", & "description". "job_post_specific" table - "jk_id" is the primary key. Each "jk_id" is unique and that represents a post for one job position from a company.
+We are going to create a simple star schema for this data set we need four tables, i.e. "job_post_specific", "job_position", "company", & "description". "job_post_specific" table - "jk_id" is the primary key. Each "jk_id" is unique and that represents a post for one job position from a company.
 
 "job_position" table - beware of the original "fcc_id"! Note, the "job_post_specific" and "job_position" tables are different. The same job position is supposed to share an idential and unique "fcc_id"; however, there can be multiple posting. In other words, we expect to see the same "fcc_id" for multiple "jk_id". For instance, Google posted four identical position "Google AI Resident, 2019 Start (Fixed-Term Employee)" with the same "fcc_id" (a5b4499d9e91a5c6) but four different "jk_id". These four positions were offered in different locations (NY, MA, CA, & WA)
 
@@ -313,7 +313,7 @@ dftop <- dftall %>%
   top_n(30)
 ```
 
-The chart below tallies the the skill count accross the entire data set. We see that Python is the language of choice followed by R and Java. For database related technologies, SQL is the clear choice due to it's ubiquity followed by "big data" variants such as Hadoop and Spark.
+The chart below tallies the the skill count across the entire data set. We see that Python is the language of choice followed by R and Java. For database related technologies, SQL is the clear choice due to it's ubiquity followed by "big data" variants such as Hadoop and Spark.
 
 ```{r fig.width=4, fig.height=6, echo = FALSE}
 p<-ggplot(data=dftop, aes(x=reorder(skill,count), y=count), width=.5,position = position_dodge(width = 60)) +
@@ -327,13 +327,13 @@ p
 
 ## Salary Index
 
-As part of our analsys, we've calculated the relative value of each skill by dividing the expected salary of each position by the number of required skills. With this measure, we hoped to determine if some data scietist roles required less populat skills which command a higher salary.
+As part of our analyses, we've calculated the relative value of each skill by dividing the expected salary of each position by the number of required skills. With this measure, we hoped to determine if some data scientist roles required less popular skills which command a higher salary.
 
-Epected salary intervals were converted to a 1 to 6 scale with 6 corresponding to expected salries >$160000. This number was divided by the total number of skills and that weight is assigned to the skill. We later aggregated the mean and sums of this values as show in the charts below.
+Expected salary intervals were converted to a 1 to 6 scale with 6 corresponding to expected salaries >$160000. This number was divided by the total number of skills and that weight is assigned to the skill. We later aggregated the mean and sums of this values as show in the charts below.
 
 Our first chart plots the sum of the relative values and gives us a very similar result to the raw count scores from the above chart.
 
-The next chart calculates the avegrage of relative values in this shows a very different picture. Less commong skills which are associated with higher paying jobs rise to the top. This chart is heavily influenced my skills with a low job count so the results need to be intepreted with caution. Rather than using it infer general trends, a candiate might find it useful to see if a skill he or she has might  opne the door to a specialized role.
+The next chart calculates the average of relative values in this shows a very different picture. Less common skills which are associated with higher paying jobs rise to the top. This chart is heavily influenced my skills with a low job count so the results need to be interpreted with caution. Rather than using it infer general trends, a candidate might find it useful to see if a skill he or she has might  open the door to a specialized role.
 
 ```{r Import and Wide Salary, echo = FALSE}
 dfsalary<- indeed_dt %>% 
@@ -391,10 +391,6 @@ p<-ggplot(data=dftopsalm, aes(x=reorder(skill,valmean), y=valmean), width=.5,pos
   coord_flip() 
 p
 ```
-
-
-
-
 ## Location 
 
 ```{r Import and Wide Location, echo = FALSE}
